@@ -1,5 +1,4 @@
 import numpy as np
-from google.colab import drive
 
 
 def unpickle(file):
@@ -24,7 +23,7 @@ def create_X_y():
 
 
 def create_class_dic():
-    metadata_path = '/content/drive/MyDrive/data2/meta'
+    metadata_path = '/home/maria/code/mariaborro/ImageClass/raw_data/cifar-100-python/meta'
     metadata = unpickle(metadata_path)
     class_dict = {key : value.decode() for key , value in dict(list(enumerate(metadata[b'fine_label_names']))).items()}
     return class_dict
