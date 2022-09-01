@@ -2,7 +2,13 @@
 .coverage
 .ipynb_checkpoints
 .DS_Store
+*.ipynb
+first_natural_model/
 raw_data/
+*.jpg
+*.jpeg
+*.png
+data/
 *.csv
 **/__pycache__/
 .env
