@@ -1,5 +1,6 @@
 import requests
 from pathlib import Path
+import os
 
 #PATH NEEDS TO CHANGE
 #SOLELY FOR TESTING PURPOSES
@@ -15,15 +16,15 @@ def get_predictions(directory : Path) -> list[str]:
     admissible_file_extensions = ["jpg","png","jpeg"]
     for item in directory.iterdir():
         if item.is_file() and get_extension(item.name) in admissible_file_extensions:
-            images.append( ("file" , open(item , mode = "rb") ) )
+            images.append( ( 'files', open(item , mode = "rb") ) )
 
     print("Sending Request...")
-    with requests.Session() as session:
-        response = session.post( local_api_url , data = images)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            return {"error" : response.content }
+    print(images)
+    response = requests.post(local_api_url , files = images)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return {"error" : response.content }
 
 
 if __name__ == "__main__":

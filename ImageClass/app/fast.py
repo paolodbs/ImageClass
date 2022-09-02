@@ -10,7 +10,10 @@ from tensorflow.keras.models import load_model
 import numpy as np
 import cv2
 import io
-from typing import List
+from typing import List , Dict
+import os
+from pathlib import Path
+import matplotlib.pyplot as plt
 
 app = FastAPI()
 
@@ -87,30 +90,50 @@ def preprocess_img(object_content):
     """Basic image preprocessing"""
     img = Image.open(io.BytesIO(object_content)).convert("RGB")
     img_reshaped = cv2.resize(np.array(img) , (32,32))
-    img_normalized = img_reshaped/255
-    return img_normalized
 
+    #Be wary normalization is wrong; its already normalizing
+    #img_reshaped= img_reshaped/255
+    return img_reshaped
+
+
+# @app.post('/multipredict')
+# async def get_multiple_predictions(files : List[UploadFile] = File(...)):
+#     """Receives a collection of images and returns the dictionary
+#     of predicted categories for each image"""
+#     content = { item.filename : await item.read()  for item in files }
+#     predictions = dict()
+#     for name , img in content.items():
+#         prediction =  app.state.model.predict( np.array([preprocess_img(img) ]) )
+#         predicted_category = app.state.labels.get( np.argmax(prediction[0]) )
+#         predictions.update( {name : predicted_category } )
+#     return {"predictions": predictions }
+
+api_path = "/home/nicole/code/NicoleChant/ImageClass/ImageClass/app/"
 
 @app.post('/multipredict')
 async def get_multiple_predictions(files : List[UploadFile] = File(...)):
     """Receives a collection of images and returns the dictionary
     of predicted categories for each image"""
-    #TODO ~ in debugging phase
-    content = { image.name : preprocess_img(await image.read()) for image in files }
+    content = { item.filename : preprocess_img(await item.read())  for item in files }
     predictions = dict()
-    for name , img in content.items():
-        prediction =  app.state.model.predict( np.array([img]) )
-        predicted_category = app.state.labels.get( np.argmax(prediction[0]) )
-        predictions.update({name : predicted_category })
-    return {"predictions": predictions }
+    if not os.path.isdir(api_path + "images"):
+        os.mkdir(api_path + "images")
 
+    for name , img in content.items():
+        prediction =  app.state.model.predict( np.array([img ]) )
+        predicted_category = app.state.labels.get( np.argmax(prediction[0]) )
+        predictions.update( {name : predicted_category } )
+        plt.imshow(img)
+        if not os.path.isdir(api_path + f"images/{predicted_category}"):
+            os.mkdir(api_path + f"images/{predicted_category}")
+        plt.savefig(api_path + f"images/{predicted_category}/{name}")
+    return {"predictions": predictions }
 
 @app.post('/filename')
 async def pred(image : UploadFile = File(...)):
     """TEST endpoint
                 Returns image filename
     /TESTED against pngs"""
-
     request_object_content = await image.read()
     img = Image.open(io.BytesIO(request_object_content))
     return {"prediction" : image.filename}
