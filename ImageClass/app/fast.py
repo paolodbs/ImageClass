@@ -17,11 +17,10 @@ import zipfile
 
 app = FastAPI()
 
-#ATTENTION not very sure of that:
-#app.state.model = load_model('../../notebooks/my_model')
+app.state.model = load_model('../../notebooks/newest_model')
 
 ##store model to cache mem
-app.state.model = load_model('../../raw_data/my_lovely_model')
+#app.state.model = load_model('../../raw_data/my_lovely_model')
 ##store categories to cache mem
 app.state.labels = create_class_dic()
 
@@ -79,19 +78,22 @@ def preprocess_img(object_content):
     return img_reshaped
 
 
+
 @app.post('/multipredict')
 async def get_multiple_predictions(files : List[UploadFile] = File(...)):
     """Receives a collection of images and returns the dictionary
     of predicted categories for each image"""
     content = { item.filename : await item.read()  for item in files }
     predictions = dict()
+
     for name , img in content.items():
         prediction =  app.state.model.predict( np.array([preprocess_img(img) ]) )
         predicted_category = app.state.labels.get( np.argmax(prediction[0]) )
         predictions.update( {name : predicted_category } )
     return {"predictions": predictions }
 
-api_path = "/home/nicole/code/NicoleChant/ImageClass/ImageClass/app/"
+#api_path = "/home/nicole/code/NicoleChant/ImageClass/ImageClass/app/"
+api_path = ''
 
 
 def zip_compression_tree(root):
@@ -111,21 +113,31 @@ def zip_compression_tree(root):
 async def get_multiple_predictions(files : List[UploadFile] = File(...)):
     """Receives a collection of images and returns the dictionary
     of predicted categories for each image"""
+
+
     content = { item.filename : preprocess_img(await item.read())  for item in files }
+
+
     predictions = dict()
     if os.path.isdir(api_path + "images"):
         shutil.rmtree( api_path + "images", ignore_errors=True)
-    os.mkdir(api_path + "images")
+        os.mkdir(api_path + "images")
+        count = 0
+        for name, img in content.items():
+            prediction =  app.state.model.predict( np.array([img]) )
+            predicted_category = app.state.labels.get( np.argmax(prediction[0]) )
+            predictions.update( {name : predicted_category } )
+            plt.imshow(img)
+        #print(type(img))
+        #print(img.shape)
+        #Do a imgshow of the files that are being inputed
+        #plt.imshow(files[count].read())
+        buf = io.BytesIO()
 
-    for name , img in content.items():
-        prediction =  app.state.model.predict( np.array([img]) )
-        predicted_category = app.state.labels.get( np.argmax(prediction[0]) )
-        predictions.update( {name : predicted_category } )
-        plt.imshow(img)
-        if not os.path.isdir(api_path + f"images/{predicted_category}"):
-            os.mkdir(api_path + f"images/{predicted_category}")
-        plt.savefig(api_path + f"images/{predicted_category}/{name}")
-
+        if not os.path.isdir(api_path + f"images/{name}"):
+            os.mkdir(api_path + f"images/{prediction}")
+            plt.savefig(api_path + f"images/{prediction}/{name}")
+            count += 1
     ##zipping the file
     #shutil.make_archive('images', 'zip', 'images')
 
@@ -133,7 +145,7 @@ async def get_multiple_predictions(files : List[UploadFile] = File(...)):
     #shutil.rmtree( api_path + "images", ignore_errors=True)
 
     #return the zip file
-    return zip_compression_tree("images")
+        return zip_compression_tree("images")
 
 
 @app.post('/filename')
